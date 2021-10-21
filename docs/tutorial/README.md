@@ -1,6 +1,10 @@
 # 图像分割基础教程
 ## 语义分割算法的根本目的：像素级分类！
 ![](./images/语义分割算法的基础概念.png)
+![](./images/像素级分类.png)
+
+* 全卷积从分类到分割
+![](./images/全卷积分类到分割.png)
   
 
 ## 语义分割算法的基本流程
@@ -29,3 +33,9 @@
 ![](./images/视频实例分割.png)
 
 ### 
+
+
+## 参考链接
+* 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
+* 2 [FCN全卷积网络详解](https://aistudio.baidu.com/aistudio/education/preview/756664)
+
