@@ -43,7 +43,13 @@
 标准卷积的矩阵表示
   ![](./images/卷积操作的矩阵表示.png)
   
+转置卷积操作的矩阵表示  
+转置卷积操作步骤：  
+先把卷积核顺时针旋转180度或者对卷积核分别执行上下翻转和左右翻转，  
+然后在加了`padding`操作的输入`input`上执行正常的卷积操作  
 
+![](./images/Transpose_Conv操作.png)  
+![](./images/Transpose_Conv.png)
 ## 参考链接
 * 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
 * 2 [FCN全卷积网络详解](https://aistudio.baidu.com/aistudio/education/preview/756664)
