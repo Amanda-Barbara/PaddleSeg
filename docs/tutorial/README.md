@@ -39,6 +39,11 @@
 * 2 反池化  
 ![](./images/on_pooling.png)
 
+* 3 Transpose Conv(转置卷积)
+标准卷积的矩阵表示
+  ![](./images/卷积操作的矩阵表示.png)
+  
+
 ## 参考链接
 * 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
 * 2 [FCN全卷积网络详解](https://aistudio.baidu.com/aistudio/education/preview/756664)
