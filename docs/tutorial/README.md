@@ -32,8 +32,12 @@
 
 ![](./images/视频实例分割.png)
 
-### 
-
+### 图像分割的上采样方法
+* 1 双线性插值
+![](./images/双线性插值.png)
+`v(0,0),v(0,1),v(1,0),v(1,1)`是定义在图像坐标系下的坐标值
+* 2 反池化  
+![](./images/on_pooling.png)
 
 ## 参考链接
 * 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
