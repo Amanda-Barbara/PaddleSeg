@@ -62,9 +62,11 @@
 * 空洞卷积输出大小的计算公式
 ![](images/空洞卷积输出大小的计算公式.png)  
 
-
-
+### deeplabv3p解读
+* [deeplabv3p文章](docs/deeplabv3p.pdf)
+* 
 ## 参考链接
 * 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
 * 2 [FCN全卷积网络详解](https://aistudio.baidu.com/aistudio/education/preview/756664)
+
 
