@@ -37,7 +37,7 @@ class DeepLabV3P(nn.Layer):
         backbone (paddle.nn.Layer): Backbone network, currently support Resnet50_vd/Resnet101_vd/Xception65.
         backbone_indices (tuple, optional): Two values in the tuple indicate the indices of output of backbone.
            Default: (0, 3).
-        aspp_ratios (tuple, optional): The dilation rate using in ASSP module.
+        aspp_ratios (tuple, optional): The dilation rate using in ASSP module. `dilation`为卷积核膨胀系数
             If output_stride=16, aspp_ratios should be set as (1, 6, 12, 18).
             If output_stride=8, aspp_ratios is (1, 12, 24, 36).
             Default: (1, 6, 12, 18).
