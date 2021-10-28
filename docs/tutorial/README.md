@@ -59,6 +59,7 @@
 * 空洞卷积可以扩大卷积之后的感受野信息，进而获取更多的上下文信息，同时不增加参数数量  
 空洞卷积的操作相当于扩大了卷积核的大小，扩充的地方进行补零操作
 ![](images/空洞卷积.png)  
+* 空洞卷积与普通卷积  
 ![](images/Atrous_Conv.png)
 * 空洞卷积输出大小的计算公式
 ![](images/空洞卷积输出大小的计算公式.png)  
@@ -67,6 +68,8 @@
 * [deeplabv3p文章](docs/deeplabv3p.pdf)
 * deeplabv3p编解码流程图
 ![](images/deeplabv3p_encoder_decoder.png)
+* deeplabv3p网络结构垂直编解码流程图  
+![](images/deeplabv3p编解码.png)
   
 ## 参考链接
 * 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
