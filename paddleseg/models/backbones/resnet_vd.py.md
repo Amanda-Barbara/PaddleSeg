@@ -48,5 +48,85 @@ if block == 3:
 ###############################################################################
 ```
 
+## 代码构建resnet50网络结构
+```python
+        # self.block_list = []
+        self.stage_list = []
+        if layers >= 50:
+            # `block`表示每一个卷积模块，分别是`conv2_x`、`conv3_x`、`conv4_x`、`conv5_x`卷积模块
+            for block in range(len(depth)):
+                shortcut = False
+                block_list = []
+                # `depth[block]`表示每个卷积模块重复的次数
+                for i in range(depth[block]):
+                    if layers in [101, 152] and block == 2:
+                        if i == 0:
+                            conv_name = "res" + str(block + 2) + "a"
+                        else:
+                            conv_name = "res" + str(block + 2) + "b" + str(i)
+                    else:
+                        conv_name = "res" + str(block + 2) + chr(97 + i)
+
+                    ###############################################################################
+                    # Add dilation rate for some segmentation tasks, if dilation_dict is not None.
+                    dilation_rate = dilation_dict[
+                        block] if dilation_dict and block in dilation_dict else 1
+
+                    # Actually block here is 'stage', and i is 'block' in 'stage'
+                    # At the stage 4, expand the the dilation_rate if given multi_grid
+                    if block == 3:
+                        dilation_rate = dilation_rate * multi_grid[i]
+                    ###############################################################################
+                    # BottleneckBlock模块包含了三个`ConvBNLayer`卷积层以及是否需要短连接操作
+                    # `ConvBNLayer` 包含了
+                    bottleneck_block = self.add_sublayer(
+                        'bb_%d_%d' % (block, i),
+                        BottleneckBlock(
+                            in_channels=num_channels[block]
+                            if i == 0 else num_filters[block] * 4,
+                            out_channels=num_filters[block],
+                            stride=2 if i == 0 and block != 0
+                            and dilation_rate == 1 else 1,
+                            shortcut=shortcut,
+                            if_first=block == i == 0,
+                            dilation=dilation_rate,
+                            data_format=data_format))
+
+                    block_list.append(bottleneck_block)
+                    shortcut = True
+                self.stage_list.append(block_list)
+        else:
+            for block in range(len(depth)):
+                shortcut = False
+                block_list = []
+                for i in range(depth[block]):
+                    dilation_rate = dilation_dict[block] \
+                        if dilation_dict and block in dilation_dict else 1
+                    if block == 3:
+                        dilation_rate = dilation_rate * multi_grid[i]
+
+                    basic_block = self.add_sublayer(
+                        'bb_%d_%d' % (block, i),
+                        BasicBlock(
+                            in_channels=num_channels[block]
+                            if i == 0 else num_filters[block],
+                            out_channels=num_filters[block],
+                            stride=2 if i == 0 and block != 0 \
+                                and dilation_rate == 1 else 1,
+                            dilation=dilation_rate,
+                            shortcut=shortcut,
+                            if_first=block == i == 0,
+                            data_format=data_format))
+                    block_list.append(basic_block)
+                    shortcut = True
+                self.stage_list.append(block_list)
+
+        self.pretrained = pretrained
+        self.init_weight()
+```
+
+
 ## 参考链接
 * 1 [resnet文章](https://arxiv.org/pdf/1512.03385.pdf)
+* 2 [paddlex之resnet_rd.py](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/paddlex/paddleseg/models/backbones/resnet_vd.py)
+
