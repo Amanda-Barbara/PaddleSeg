@@ -18,3 +18,6 @@
         num_filters = [64, 128, 256, 512]
 ```
 `depth`列表中的数值分别表示`conv2_x`、`conv3_x`、`conv4_x`、`conv5_x`神经网络模块的个数
+
+## 参考链接
+* 1 [resnet文章](https://arxiv.org/pdf/1512.03385.pdf)
