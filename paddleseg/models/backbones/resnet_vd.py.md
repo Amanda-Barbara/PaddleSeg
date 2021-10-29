@@ -125,7 +125,11 @@ if block == 3:
         self.init_weight()
 ```
 * 构建后的resnet50网络结构
-
+```python
+model = ResNet_vd(layers=50, **args)
+```
+* model的网络结构如下  
+![](data/images/resnet50_arch.png)  
 <details><summary>展开/收起</summary>
 <pre><code>
 
