@@ -78,7 +78,7 @@ if block == 3:
                         dilation_rate = dilation_rate * multi_grid[i]
                     ###############################################################################
                     # BottleneckBlock模块包含了三个`ConvBNLayer`卷积层以及是否需要短连接操作
-                    # `ConvBNLayer` 包含了
+                    # `ConvBNLayer` 包含了卷积、标准化、激活操作
                     bottleneck_block = self.add_sublayer(
                         'bb_%d_%d' % (block, i),
                         BottleneckBlock(
