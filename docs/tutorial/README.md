@@ -70,7 +70,13 @@
 ![](images/deeplabv3p_encoder_decoder.png)
 * deeplabv3p网络结构垂直编解码流程图  
 ![](images/deeplabv3p编解码.png)
-  
+```text
+# 编码器配置，采用ASPP架构，pooling + 1x1_conv + 三个不同尺度的空洞卷积并行, concat后1x1conv
+# ASPP_WITH_SEP_CONV：默认为真，使用depthwise可分离卷积，否则使用普通卷积
+# OUTPUT_STRIDE: 下采样倍数，8或16，决定aspp_ratios大小
+# aspp_ratios：ASPP模块空洞卷积的采样率
+```
+
 ## 参考链接
 * 1 [图像分割综述](https://aistudio.baidu.com/aistudio/education/preview/1838052)
 * 2 [FCN全卷积网络详解](https://aistudio.baidu.com/aistudio/education/preview/756664)

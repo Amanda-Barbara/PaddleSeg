@@ -33,6 +33,10 @@ class DeepLabV3P(nn.Layer):
      (https://arxiv.org/abs/1802.02611)
 
     Args:
+        # 编码器配置，采用ASPP架构，pooling + 1x1_conv + 三个不同尺度的空洞卷积并行, concat后1x1conv
+        # ASPP_WITH_SEP_CONV：默认为真，使用depthwise可分离卷积，否则使用普通卷积
+        # OUTPUT_STRIDE: 下采样倍数，8或16，决定aspp_ratios大小
+        # aspp_ratios：ASPP模块空洞卷积的采样率
         num_classes (int): The unique number of target classes.
         backbone (paddle.nn.Layer): Backbone network, currently support Resnet50_vd/Resnet101_vd/Xception65.
         backbone_indices (tuple, optional): Two values in the tuple indicate the indices of output of backbone.
