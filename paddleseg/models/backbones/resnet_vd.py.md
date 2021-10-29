@@ -124,8 +124,482 @@ if block == 3:
         self.pretrained = pretrained
         self.init_weight()
 ```
+* 构建后的resnet50网络结构
 
+<details><summary>展开/收起</summary>
+<pre><code>
 
+ResNet_vd(
+  (conv1_1): ConvBNLayer(
+    (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+    (_conv): Conv2D(3, 32, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+    (_batch_norm): SyncBatchNorm(num_features=32, momentum=0.9, epsilon=1e-05)
+    (_act_op): Activation(
+      (act_func): ReLU()
+    )
+  )
+  (conv1_2): ConvBNLayer(
+    (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+    (_conv): Conv2D(32, 32, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (_batch_norm): SyncBatchNorm(num_features=32, momentum=0.9, epsilon=1e-05)
+    (_act_op): Activation(
+      (act_func): ReLU()
+    )
+  )
+  (conv1_3): ConvBNLayer(
+    (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+    (_conv): Conv2D(32, 64, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+    (_act_op): Activation(
+      (act_func): ReLU()
+    )
+  )
+  (pool2d_max): MaxPool2D(kernel_size=3, stride=2, padding=1)
+  (bb_0_0): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 64, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 64, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+    (short): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_0_1): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 64, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 64, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_0_2): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 64, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 64, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(64, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_1_0): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 128, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+    (short): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_1_1): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 128, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_1_2): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 128, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_1_3): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 128, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(128, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_2_0): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 256, kernel_size=[3, 3], dilation=[2, 2], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+    (short): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_2_1): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 256, kernel_size=[3, 3], dilation=[2, 2], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_2_2): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 256, kernel_size=[3, 3], dilation=[2, 2], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_2_3): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 256, kernel_size=[3, 3], dilation=[2, 2], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_2_4): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 256, kernel_size=[3, 3], dilation=[2, 2], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_2_5): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 256, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 256, kernel_size=[3, 3], dilation=[2, 2], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(256, 1024, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_3_0): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 512, kernel_size=[3, 3], dilation=[4, 4], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 2048, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=2048, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+    (short): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(1024, 2048, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=2048, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_3_1): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(2048, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 512, kernel_size=[3, 3], dilation=[4, 4], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 2048, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=2048, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+  (bb_3_2): BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(2048, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 512, kernel_size=[3, 3], dilation=[4, 4], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 2048, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=2048, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+)
+</code></pre>
+</details>  
+
+## resnet50网络结构解析
+* `conv1_*`包含了三个卷积操作  
+  `bb_0_0`,`bb_0_1`,`bb_0_2` 
+  `bb_1_0`,`bb_1_1`,`bb_1_2`,`bb_1_3`
+  `bb_2_0`,`bb_2_1`,`bb_2_2`,`bb_2_3`,`bb_2_4`,`bb_2_5`
+  `bb_3_0`,`bb_3_1`,`bb_3_2`  
+分别做了`BottleneckBlock`操作，BottleneckBlock模块包含了三个`ConvBNLayer`卷积层以及是否需要短连接操作
+ ```text
+BottleneckBlock(
+    (conv0): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(2048, 512, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv1): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 512, kernel_size=[3, 3], dilation=[4, 4], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation(
+        (act_func): ReLU()
+      )
+    )
+    (conv2): ConvBNLayer(
+      (_pool2d_avg): AvgPool2D(kernel_size=2, stride=2, padding=0)
+      (_conv): Conv2D(512, 2048, kernel_size=[1, 1], data_format=NCHW)
+      (_batch_norm): SyncBatchNorm(num_features=2048, momentum=0.9, epsilon=1e-05)
+      (_act_op): Activation()
+    )
+  )
+``` 
 ## 参考链接
 * 1 [resnet文章](https://arxiv.org/pdf/1512.03385.pdf)
 * 2 [paddlex之resnet_rd.py](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/paddlex/paddleseg/models/backbones/resnet_vd.py)
