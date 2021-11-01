@@ -4,6 +4,9 @@
 * [对输入数据进行上采样操作时的角点对齐方法](https://blog.csdn.net/wangweiwells/article/details/101820932)
 ![](data/images/align_corners.png)
 
+## backbone_indices
+
+
 ## 参考链接
 * 1 
 

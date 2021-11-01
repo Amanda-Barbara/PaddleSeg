@@ -39,6 +39,7 @@ class DeepLabV3P(nn.Layer):
         # aspp_ratios：ASPP模块空洞卷积的采样率
         num_classes (int): The unique number of target classes.
         backbone (paddle.nn.Layer): Backbone network, currently support Resnet50_vd/Resnet101_vd/Xception65.
+        # backbone_indices 是创建模型时需要传入的参数，该参数指定使用backbone返回的哪个特征图, backbone可以根据不同的块返回不同尺度的特征图
         backbone_indices (tuple, optional): Two values in the tuple indicate the indices of output of backbone.
            Default: (0, 3).
         aspp_ratios (tuple, optional): The dilation rate using in ASSP module. `dilation`为卷积核膨胀系数
