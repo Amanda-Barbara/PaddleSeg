@@ -728,7 +728,7 @@ DeepLabV3P(
 ```python
 losses = [
                     paddleseg.models.CrossEntropyLoss(),
-                    paddleseg.models.LovaszSoftmaxLoss()
+                    paddleseg.models.LovaszSoftmaxLoss() # 采用了iou loss
                 ]
                 coef = [.8, .2]
                 loss_type = [
