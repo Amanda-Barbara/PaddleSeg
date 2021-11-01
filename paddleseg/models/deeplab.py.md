@@ -722,9 +722,9 @@ DeepLabV3P(
         ]
 ```
 * DeepLabV3P推理过程包含了`backbone`以及`head`阶段，以及最后的双线性插值阶段
-* 输入是n*3*512*512经过`backbone`阶段之后的大小是
+* 输入是nX3X512X512经过`backbone`阶段之后的大小是
 ![](data/images/DeepLabV3P_Forward.png)  
-经过`head`阶段之后的大小是n*3*128*128，最后再通过双线性插值而得到n*3*512*512大小的预测图，每一个像素点表示如下加权后的分类损失之和
+经过`head`阶段之后的大小是nX3X128X128，最后再通过双线性插值而得到nX3X512X512大小的预测图，每一个像素点表示如下加权后的分类损失之和
 ```python
 losses = [
                     paddleseg.models.CrossEntropyLoss(),
