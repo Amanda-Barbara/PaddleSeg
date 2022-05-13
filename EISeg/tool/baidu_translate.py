@@ -1,3 +1,17 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import random
 import hashlib
@@ -23,21 +37,9 @@ class BaiduTranslate:
         md = hashlib.md5()
         md.update(sign.encode(encoding="utf-8"))
         sign = md.hexdigest()
-        myurl = (
-            self.url
-            + "?appid="
-            + self.appid
-            + "&q="
-            + parse.quote(text)
-            + "&from="
-            + self.fromLang
-            + "&to="
-            + self.toLang
-            + "&salt="
-            + str(self.salt)
-            + "&sign="
-            + sign
-        )
+        myurl = (self.url + "?appid=" + self.appid + "&q=" + parse.quote(text) +
+                 "&from=" + self.fromLang + "&to=" + self.toLang + "&salt=" +
+                 str(self.salt) + "&sign=" + sign)
         try:
             httpClient = http.client.HTTPConnection("api.fanyi.baidu.com")
             httpClient.request("GET", myurl)
@@ -48,6 +50,7 @@ class BaiduTranslate:
             return True, dst
         except Exception as e:
             return False, e
+
 
 def read_ts(ts_path):
     xml = open(ts_path, "r", encoding="utf-8").read()

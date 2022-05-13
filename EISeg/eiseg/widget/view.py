@@ -1,3 +1,17 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from qtpy import QtWidgets, QtCore, QtGui
 from qtpy.QtCore import Qt
 
@@ -7,9 +21,8 @@ class AnnotationView(QtWidgets.QGraphicsView):
 
     def __init__(self, *args):
         super(AnnotationView, self).__init__(*args)
-        self.setRenderHints(
-            QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform
-        )
+        self.setRenderHints(QtGui.QPainter.Antialiasing |
+                            QtGui.QPainter.SmoothPixmapTransform)
         self.setMouseTracking(True)
         self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
         self.setResizeAnchor(QtWidgets.QGraphicsView.NoAnchor)
@@ -33,12 +46,11 @@ class AnnotationView(QtWidgets.QGraphicsView):
             super(AnnotationView, self).wheelEvent(ev)
 
     def mouseMoveEvent(self, ev):
-        if self.middle_click and (
-            self.horizontalScrollBar().isVisible()
-            or self.verticalScrollBar().isVisible()
-        ):
+        if self.middle_click and (self.horizontalScrollBar().isVisible() or
+                                  self.verticalScrollBar().isVisible()):
             # 放大到出现滚动条才允许拖动，避免出现抖动
-            self._endPos = ev.pos() / self.zoom_all - self._startPos / self.zoom_all
+            self._endPos = ev.pos(
+            ) / self.zoom_all - self._startPos / self.zoom_all
             # 这儿不写为先减后除，这样会造成速度不一致
             self.point = self.point + self._endPos
             self._startPos = ev.pos()

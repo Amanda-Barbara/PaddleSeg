@@ -31,41 +31,115 @@ from paddleseg.utils import get_sys_env, logger, get_image_list
 from paddleseg.utils.visualize import get_pseudo_color_map
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Test')
+    parser.add_argument(
+        "--config",
+        dest="cfg",
+        help="The config file.",
+        default=None,
+        type=str,
+        required=True)
+    parser.add_argument(
+        '--image_path',
+        dest='image_path',
+        help='The directory or path or file list of the images to be predicted.',
+        type=str,
+        default=None,
+        required=True)
+    parser.add_argument(
+        '--batch_size',
+        dest='batch_size',
+        help='Mini batch size of one gpu or cpu.',
+        type=int,
+        default=1)
+    parser.add_argument(
+        '--save_dir',
+        dest='save_dir',
+        help='The directory for saving the predict result.',
+        type=str,
+        default='./output')
+    parser.add_argument(
+        '--device',
+        choices=['cpu', 'gpu'],
+        default="gpu",
+        help="Select which device to inference, defaults to gpu.")
+
+    parser.add_argument(
+        '--use_trt',
+        default=False,
+        type=eval,
+        choices=[True, False],
+        help='Whether to use Nvidia TensorRT to accelerate prediction.')
+    parser.add_argument(
+        "--precision",
+        default="fp32",
+        type=str,
+        choices=["fp32", "fp16", "int8"],
+        help='The tensorrt precision.')
+    parser.add_argument(
+        '--min_subgraph_size',
+        default=3,
+        type=int,
+        help='The min subgraph size in tensorrt prediction.')
+    parser.add_argument(
+        '--enable_auto_tune',
+        default=False,
+        type=eval,
+        choices=[True, False],
+        help='Whether to enable tuned dynamic shape. We uses some images to collect '
+        'the dynamic shape for trt sub graph, which avoids setting dynamic shape manually.'
+    )
+    parser.add_argument(
+        '--auto_tuned_shape_file',
+        type=str,
+        default="auto_tune_tmp.pbtxt",
+        help='The temp file to save tuned dynamic shape.')
+
+    parser.add_argument(
+        '--cpu_threads',
+        default=10,
+        type=int,
+        help='Number of threads to predict when using cpu.')
+    parser.add_argument(
+        '--enable_mkldnn',
+        default=False,
+        type=eval,
+        choices=[True, False],
+        help='Enable to use mkldnn to speed up when using cpu.')
+
+    parser.add_argument(
+        "--benchmark",
+        type=eval,
+        default=False,
+        help="Whether to log some information about environment, model, configuration and performance."
+    )
+    parser.add_argument(
+        "--model_name",
+        default="",
+        type=str,
+        help='When `--benchmark` is True, the specified model name is displayed.'
+    )
+
+    parser.add_argument(
+        '--with_argmax',
+        dest='with_argmax',
+        help='Perform argmax operation on the predict result.',
+        action='store_true')
+    parser.add_argument(
+        '--print_detail',
+        default=True,
+        type=eval,
+        choices=[True, False],
+        help='Print GLOG information of Paddle Inference.')
+
+    return parser.parse_args()
+
+
 def use_auto_tune(args):
     return hasattr(PredictConfig, "collect_shape_range_info") \
         and hasattr(PredictConfig, "enable_tuned_tensorrt_dynamic_shape") \
         and args.device == "gpu" and args.use_trt and args.enable_auto_tune
-
-
-class DeployConfig:
-    def __init__(self, path):
-        with codecs.open(path, 'r', 'utf-8') as file:
-            self.dic = yaml.load(file, Loader=yaml.FullLoader)
-
-        self._transforms = self._load_transforms(
-            self.dic['Deploy']['transforms'])
-        self._dir = os.path.dirname(path)
-
-    @property
-    def transforms(self):
-        return self._transforms
-
-    @property
-    def model(self):
-        return os.path.join(self._dir, self.dic['Deploy']['model'])
-
-    @property
-    def params(self):
-        return os.path.join(self._dir, self.dic['Deploy']['params'])
-
-    def _load_transforms(self, t_list):
-        com = manager.TRANSFORMS
-        transforms = []
-        for t in t_list:
-            ctype = t.pop('type')
-            transforms.append(com[ctype](**t))
-
-        return T.Compose(transforms)
 
 
 def auto_tune(args, imgs, img_nums):
@@ -75,14 +149,15 @@ def auto_tune(args, imgs, img_nums):
 
     Args:
         args(dict): input args.
-        imgs(str, list[str]): the path for images.
+        imgs(str, list[str], numpy): the path for images or the origin images.
         img_nums(int): the nums of images used for auto tune.
     Returns:
         None
     """
     logger.info("Auto tune the dynamic shape for GPU TRT.")
 
-    assert use_auto_tune(args)
+    assert use_auto_tune(args), "Do not support auto_tune, which requires " \
+        "device==gpu && use_trt==True && paddle >= 2.2"
 
     if not isinstance(imgs, (list, tuple)):
         imgs = [imgs]
@@ -100,21 +175,57 @@ def auto_tune(args, imgs, img_nums):
     input_handle = predictor.get_input_handle(input_names[0])
 
     for i in range(0, num):
-        data = np.array([cfg.transforms(imgs[i])[0]])
+        if isinstance(imgs[i], str):
+            data = np.array([cfg.transforms(imgs[i])[0]])
+        else:
+            data = imgs[i]
         input_handle.reshape(data.shape)
         input_handle.copy_from_cpu(data)
         try:
             predictor.run()
-        except:
+        except Exception as e:
+            logger.info(str(e))
             logger.info(
-                "Auto tune fail. Usually, the error is out of GPU memory, "
-                "because the model and image is too large. \n")
+                "Auto tune failed. Usually, the error is out of GPU memory "
+                "for the model or image is too large. \n")
             del predictor
             if os.path.exists(args.auto_tuned_shape_file):
                 os.remove(args.auto_tuned_shape_file)
             return
 
     logger.info("Auto tune success.\n")
+
+
+class DeployConfig:
+    def __init__(self, path):
+        with codecs.open(path, 'r', 'utf-8') as file:
+            self.dic = yaml.load(file, Loader=yaml.FullLoader)
+
+        self._transforms = self.load_transforms(self.dic['Deploy'][
+            'transforms'])
+        self._dir = os.path.dirname(path)
+
+    @property
+    def transforms(self):
+        return self._transforms
+
+    @property
+    def model(self):
+        return os.path.join(self._dir, self.dic['Deploy']['model'])
+
+    @property
+    def params(self):
+        return os.path.join(self._dir, self.dic['Deploy']['params'])
+
+    @staticmethod
+    def load_transforms(t_list):
+        com = manager.TRANSFORMS
+        transforms = []
+        for t in t_list:
+            ctype = t.pop('type')
+            transforms.append(com[ctype](**t))
+
+        return T.Compose(transforms)
 
 
 class Predictor:
@@ -134,7 +245,15 @@ class Predictor:
         else:
             self._init_gpu_config()
 
-        self.predictor = create_predictor(self.pred_cfg)
+        try:
+            self.predictor = create_predictor(self.pred_cfg)
+        except Exception as e:
+            logger.info(str(e))
+            logger.info(
+                "If the above error is '(InvalidArgument) some trt inputs dynamic shape info not set, "
+                "..., Expected all_dynamic_shape_set == true, ...', "
+                "please set --enable_auto_tune=True to use auto_tune. \n")
+            exit()
 
         if hasattr(args, 'benchmark') and args.benchmark:
             import auto_log
@@ -193,7 +312,7 @@ class Predictor:
             self.pred_cfg.enable_tensorrt_engine(
                 workspace_size=1 << 30,
                 max_batch_size=1,
-                min_subgraph_size=50,
+                min_subgraph_size=self.args.min_subgraph_size,
                 precision_mode=precision_mode,
                 use_static=False,
                 use_calib_mode=False)
@@ -212,11 +331,10 @@ class Predictor:
                 self.pred_cfg.set_trt_dynamic_shape_info(
                     min_input_shape, max_input_shape, opt_input_shape)
 
-    def run(self, imgs):
-        if not isinstance(imgs, (list, tuple)):
-            imgs = [imgs]
+    def run(self, imgs_path):
+        if not isinstance(imgs_path, (list, tuple)):
+            imgs_path = [imgs_path]
 
-        num = len(imgs)
         input_names = self.predictor.get_input_names()
         input_handle = self.predictor.get_input_handle(input_names[0])
         output_names = self.predictor.get_output_names()
@@ -227,29 +345,45 @@ class Predictor:
         if not os.path.exists(args.save_dir):
             os.makedirs(args.save_dir)
 
-        for i in range(0, num, args.batch_size):
+        for i in range(0, len(imgs_path), args.batch_size):
+            # warm up
+            if i == 0 and args.benchmark:
+                for j in range(5):
+                    data = np.array([
+                        self._preprocess(img)
+                        for img in imgs_path[0:args.batch_size]
+                    ])
+                    input_handle.reshape(data.shape)
+                    input_handle.copy_from_cpu(data)
+                    self.predictor.run()
+                    results = output_handle.copy_to_cpu()
+                    results = self._postprocess(results)
+
+            # inference
             if args.benchmark:
                 self.autolog.times.start()
-            data = np.array(
-                [self._preprocess(img) for img in imgs[i:i + args.batch_size]])
 
+            data = np.array([
+                self._preprocess(p) for p in imgs_path[i:i + args.batch_size]
+            ])
             input_handle.reshape(data.shape)
             input_handle.copy_from_cpu(data)
+
             if args.benchmark:
                 self.autolog.times.stamp()
 
             self.predictor.run()
 
-            results = output_handle.copy_to_cpu()
             if args.benchmark:
                 self.autolog.times.stamp()
 
+            results = output_handle.copy_to_cpu()
             results = self._postprocess(results)
 
             if args.benchmark:
                 self.autolog.times.end(stamp=True)
-            self._save_imgs(results, imgs)
 
+            self._save_imgs(results, imgs_path[i:i + args.batch_size])
         logger.info("Finish")
 
     def _preprocess(self, img):
@@ -260,134 +394,24 @@ class Predictor:
             results = np.argmax(results, axis=1)
         return results
 
-    def _save_imgs(self, results, imgs):
+    def _save_imgs(self, results, imgs_path):
         for i in range(results.shape[0]):
             result = get_pseudo_color_map(results[i])
-            basename = os.path.basename(imgs[i])
+            basename = os.path.basename(imgs_path[i])
             basename, _ = os.path.splitext(basename)
             basename = f'{basename}.png'
             result.save(os.path.join(self.args.save_dir, basename))
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Test')
-    parser.add_argument(
-        "--config",
-        dest="cfg",
-        help="The config file.",
-        default=None,
-        type=str,
-        required=True)
-    parser.add_argument(
-        '--image_path',
-        dest='image_path',
-        help='The directory or path or file list of the images to be predicted.',
-        type=str,
-        default=None,
-        required=True)
-    parser.add_argument(
-        '--batch_size',
-        dest='batch_size',
-        help='Mini batch size of one gpu or cpu.',
-        type=int,
-        default=1)
-    parser.add_argument(
-        '--save_dir',
-        dest='save_dir',
-        help='The directory for saving the predict result.',
-        type=str,
-        default='./output')
-    parser.add_argument(
-        '--device',
-        choices=['cpu', 'gpu'],
-        default="gpu",
-        help="Select which device to inference, defaults to gpu.")
-
-    parser.add_argument(
-        '--use_trt',
-        default=False,
-        type=eval,
-        choices=[True, False],
-        help='Whether to use Nvidia TensorRT to accelerate prediction.')
-    parser.add_argument(
-        "--precision",
-        default="fp32",
-        type=str,
-        choices=["fp32", "fp16", "int8"],
-        help='The tensorrt precision.')
-    parser.add_argument(
-        '--enable_auto_tune',
-        default=False,
-        type=eval,
-        choices=[True, False],
-        help=
-        'Whether to enable tuned dynamic shape. We uses some images to collect '
-        'the dynamic shape for trt sub graph, which avoids setting dynamic shape manually.'
-    )
-    parser.add_argument(
-        '--auto_tuned_shape_file',
-        type=str,
-        default="auto_tune_tmp.pbtxt",
-        help='The temp file to save tuned dynamic shape.')
-
-    parser.add_argument(
-        '--cpu_threads',
-        default=10,
-        type=int,
-        help='Number of threads to predict when using cpu.')
-    parser.add_argument(
-        '--enable_mkldnn',
-        default=False,
-        type=eval,
-        choices=[True, False],
-        help='Enable to use mkldnn to speed up when using cpu.')
-
-    parser.add_argument(
-        "--benchmark",
-        type=eval,
-        default=False,
-        help=
-        "Whether to log some information about environment, model, configuration and performance."
-    )
-    parser.add_argument(
-        "--model_name",
-        default="",
-        type=str,
-        help='When `--benchmark` is True, the specified model name is displayed.'
-    )
-
-    parser.add_argument(
-        '--use_cpu',
-        dest='use_cpu',
-        help='Whether to use X86 CPU for inference. Uses GPU in default.',
-        action='store_true')
-    parser.add_argument(
-        '--use_mkldnn',
-        dest='use_mkldnn',
-        help='Whether to use MKLDNN to accelerate prediction.',
-        action='store_true')
-    parser.add_argument(
-        '--with_argmax',
-        dest='with_argmax',
-        help='Perform argmax operation on the predict result.',
-        action='store_true')
-
-    parser.add_argument(
-        '--print_detail',
-        dest='print_detail',
-        help='Print GLOG information of Paddle Inference.',
-        action='store_true')
-
-    return parser.parse_args()
-
-
 def main(args):
     imgs_list, _ = get_image_list(args.image_path)
 
+    # collect dynamic shape by auto_tune
     if use_auto_tune(args):
         tune_img_nums = 10
         auto_tune(args, imgs_list, tune_img_nums)
 
+    # create and run predictor
     predictor = Predictor(args)
     predictor.run(imgs_list)
 

@@ -1,22 +1,41 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os.path as osp
 import time
 import json
+import logging
+
 import cv2
 import numpy as np
 from skimage.measure import label
+import paddle
 
+from eiseg import logger
 from inference import clicker
 from inference.predictor import get_predictor
 import util
 from util.vis import draw_with_blend_and_clicks
-from util import MODELS, LabelList
+from models import EISegModel
+from util import LabelList
 
 
 class InteractiveController:
     def __init__(
-        self,
-        predictor_params: dict = None,
-        prob_thresh: float = 0.5,
-    ):
+            self,
+            predictor_params: dict=None,
+            prob_thresh: float=0.5, ):
         """初始化控制器.
 
         Parameters
@@ -31,6 +50,7 @@ class InteractiveController:
         self.prob_thresh = prob_thresh
         self.model = None
         self.image = None
+        self.rawImage = None
         self.predictor = None
         self.clicker = clicker.Clicker()
         self.states = []
@@ -45,6 +65,7 @@ class InteractiveController:
         self._result_mask = None
         self.labelList = LabelList()
         self.lccFilter = False
+        self.log = logging.getLogger(__name__)
 
     def filterLargestCC(self, do_filter: bool):
         """设置是否只保留推理结果中的最大联通块
@@ -58,13 +79,17 @@ class InteractiveController:
             return
         self.lccFilter = do_filter
 
-    def setModel(self, modelName: str):
+    def setModel(self, param_path=None, use_gpu=None):
         """设置推理其模型.
 
         Parameters
         ----------
-        modelName : str
-            模型名称，模型类中的__name__属性
+        params_path : str
+            模型路径
+
+        use_gpu : bool
+            None:检测，根据paddle版本判断
+            bool:按照指定是否开启GPU
 
         Returns
         -------
@@ -72,35 +97,25 @@ class InteractiveController:
             是否成功设置模型, 失败原因
 
         """
-        if not isinstance(modelName, str):
-            return False, "模型名应为str类型"
-        try:
-            self.model = MODELS[modelName]()
-        except KeyError as e:
-            return False, str(e)
-        return True, "模型设置成功"
-
-    def setParam(self, paramPath: str):
-        """设置模型使用的推理参数
-
-        Parameters
-        ----------
-        paramPath : str
-            推理参数路径
-
-        Returns
-        -------
-        bool, str
-            是否设置成功, 失败原因
-
-        """
-        if not self.modelSet:
-            return False, "模型未设置，请先设置模型"
-        try:
-            self.model.load_param(paramPath)
-        except Exception as e:
-            return False, str(e)
-        return True, "权重设置成功"
+        if param_path is not None:
+            model_path = param_path.replace(".pdiparams", ".pdmodel")
+            if not osp.exists(model_path):
+                raise Exception(f"未在 {model_path} 找到模型文件")
+            if use_gpu is None:
+                if paddle.device.is_compiled_with_cuda(
+                ):  # TODO: 可以使用GPU却返回False
+                    use_gpu = True
+                else:
+                    use_gpu = False
+            logger.info(f"User paddle compiled with gpu: use_gpu {use_gpu}")
+            tic = time.time()
+            try:
+                self.model = EISegModel(model_path, param_path, use_gpu)
+                self.reset_predictor()  # 即刻生效
+            except KeyError as e:
+                return False, str(e)
+            logger.info(f"Load model {model_path} took {time.time() - tic}")
+            return True, "模型设置成功"
 
     def setImage(self, image: np.array):
         """设置当前标注的图片
@@ -111,9 +126,10 @@ class InteractiveController:
             当前标注的图片
 
         """
-        self.image = image
-        self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        self.resetLastObject()
+        if self.model is not None:
+            self.image = image
+            self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+            self.resetLastObject()
 
     # 标签操作
     def setLabelList(self, labelList: json):
@@ -152,11 +168,11 @@ class InteractiveController:
     def clearLabel(self):
         self.labelList.clear()
 
-    def readLabel(self, path):
-        self.labelList.readLabel(path)
+    def importLabel(self, path):
+        self.labelList.importLabel(path)
 
-    def saveLabel(self, path):
-        self.labelList.saveLabel(path)
+    def exportLabel(self, path):
+        self.labelList.exportLabel(path)
 
     # 点击操作
     def addClick(self, x: int, y: int, is_positive: bool):
@@ -182,19 +198,15 @@ class InteractiveController:
         if not self.inImage(x, y):
             return False, "点击越界"
         if not self.modelSet:
-            return False, "模型未设置"
-        if not self.paramSet:
-            return False, "参数未设置"
+            return False, "未加载模型"
         if not self.imageSet:
             return False, "图像未设置"
 
         if len(self.states) == 0:  # 保存一个空状态
-            self.states.append(
-                {
-                    "clicker": self.clicker.get_state(),
-                    "predictor": self.predictor.get_states(),
-                }
-            )
+            self.states.append({
+                "clicker": self.clicker.get_state(),
+                "predictor": self.predictor.get_states(),
+            })
 
         # 2. 添加点击，跑推理
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
@@ -202,12 +214,10 @@ class InteractiveController:
         pred = self.predictor.get_prediction(self.clicker)
 
         # 3. 保存状态
-        self.states.append(
-            {
-                "clicker": self.clicker.get_state(),
-                "predictor": self.predictor.get_states(),
-            }
-        )
+        self.states.append({
+            "clicker": self.clicker.get_state(),
+            "predictor": self.predictor.get_states(),
+        })
         if self.probs_history:
             self.probs_history.append((self.probs_history[-1][1], pred))
         else:
@@ -244,7 +254,7 @@ class InteractiveController:
             self.predictor.set_states(next_state["predictor"])
             self.probs_history.append(self.undo_probs_history.pop())
 
-    def finishObject(self):
+    def finishObject(self, building=False):
         """
         结束当前物体标注，准备标下一个
         """
@@ -252,10 +262,11 @@ class InteractiveController:
         if object_prob is None:
             return None, None
         object_mask = object_prob > self.prob_thresh
-        polygon = util.get_polygon(object_mask.astype(np.uint8) * 255)
+        if self.lccFilter:
+            object_mask = self.getLargestCC(object_mask)
+        polygon = util.get_polygon(
+            (object_mask.astype(np.uint8) * 255), building=building)
         if polygon is not None:
-            if self.lccFilter:
-                object_mask = self.getLargestCC(object_mask)
             self._result_mask[object_mask] = self.curr_label_number
             self.resetLastObject()
             self.polygons.append([self.curr_label_number, polygon])
@@ -305,9 +316,11 @@ class InteractiveController:
         """
         if predictor_params is not None:
             self.predictor_params = predictor_params
-        self.predictor = get_predictor(self.model.model, **self.predictor_params)
-        if self.image is not None:
-            self.predictor.set_input_image(self.image)
+        if self.model.model:
+            self.predictor = get_predictor(self.model.model,
+                                           **self.predictor_params)
+            if self.image is not None:
+                self.predictor.set_input_image(self.image)
 
     def reset_init_mask(self):
         self.clicker.click_indx_offset = 0
@@ -327,27 +340,23 @@ class InteractiveController:
         results_mask_for_vis = np.zeros_like(self.result_mask)
         results_mask_for_vis *= self.curr_label_number
         if self.probs_history:
-            results_mask_for_vis[
-                self.current_object_prob > self.prob_thresh
-            ] = self.curr_label_number
+            results_mask_for_vis[self.current_object_prob >
+                                 self.prob_thresh] = self.curr_label_number
         if self.lccFilter:
-            results_mask_for_vis = (
-                self.getLargestCC(results_mask_for_vis) * self.curr_label_number
-            )
+            results_mask_for_vis = (self.getLargestCC(results_mask_for_vis) *
+                                    self.curr_label_number)
         vis = draw_with_blend_and_clicks(
             self.image,
             mask=results_mask_for_vis,
             alpha=alpha_blend,
             clicks_list=self.clicker.clicks_list,
             radius=click_radius,
-            palette=self.palette,
-        )
+            palette=self.palette, )
         return vis
 
     def inImage(self, x: int, y: int):
         s = self.image.shape
         if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
-            print("点击越界")
             return False
         return True
 
@@ -386,11 +395,7 @@ class InteractiveController:
 
     @property
     def imgShape(self):
-        return self.image.shape[1::-1]
-
-    @property
-    def paramSet(self):
-        return self.model.paramSet
+        return self.image.shape  # [1::-1]
 
     @property
     def modelSet(self):

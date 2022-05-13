@@ -40,15 +40,17 @@ def loss_computation(logits_list, labels, losses, edges=None):
     for i in range(len(logits_list)):
         logits = logits_list[i]
         loss_i = losses['types'][i]
-        # Whether to use edges as labels According to loss type.
-        if loss_i.__class__.__name__ in ('BCELoss',
-                                         'FocalLoss') and loss_i.edge_label:
-            loss_list.append(losses['coef'][i] * loss_i(logits, edges))
+        coef_i = losses['coef'][i]
+
+        if loss_i.__class__.__name__ == 'MixedLoss':
+            mixed_loss_list = loss_i(logits, labels)
+            for mixed_loss in mixed_loss_list:
+                loss_list.append(coef_i * mixed_loss)
         elif loss_i.__class__.__name__ in ("KLLoss", ):
-            loss_list.append(losses['coef'][i] * loss_i(
-                logits_list[0], logits_list[1].detach()))
+            loss_list.append(coef_i *
+                             loss_i(logits_list[0], logits_list[1].detach()))
         else:
-            loss_list.append(losses['coef'][i] * loss_i(logits, labels))
+            loss_list.append(coef_i * loss_i(logits, labels))
     return loss_list
 
 
@@ -67,8 +69,10 @@ def train(model,
           losses=None,
           keep_checkpoint_max=5,
           test_config=None,
-          fp16=False,
-          profiler_options=None):
+          precision='fp32',
+          amp_level='O1',
+          profiler_options=None,
+          to_static_training=False):
     """
     Launch training.
 
@@ -89,8 +93,12 @@ def train(model,
             The 'types' item is a list of object of paddleseg.models.losses while the 'coef' item is a list of the relevant coefficient.
         keep_checkpoint_max (int, optional): Maximum number of checkpoints to save. Default: 5.
         test_config(dict, optional): Evaluation config.
-        fp16 (bool, optional): Whether to use amp.
+        precision (str, optional): Use AMP if precision='fp16'. If precision='fp32', the training is normal.
+        amp_level (str, optional): Auto mixed precision level. Accepted values are “O1” and “O2”: O1 represent mixed precision, 
+            the input data type of each operator will be casted by white_list and black_list; O2 represent Pure fp16, all operators 
+            parameters and input data will be casted to fp16, except operators in black_list, don’t support fp16 kernel and batchnorm. Default is O1(amp)
         profiler_options (str, optional): The option of train profiler.
+        to_static_training (bool, optional): Whether to use @to_static for training.
     """
     model.train()
     nranks = paddle.distributed.ParallelEnv().nranks
@@ -104,6 +112,17 @@ def train(model,
         if os.path.exists(save_dir):
             os.remove(save_dir)
         os.makedirs(save_dir)
+
+    # use amp
+    if precision == 'fp16':
+        logger.info('use AMP to train. AMP level = {}'.format(amp_level))
+        scaler = paddle.amp.GradScaler(init_loss_scaling=1024)
+        if amp_level == 'O2':
+            model, optimizer = paddle.amp.decorate(
+                models=model,
+                optimizers=optimizer,
+                level='O2',
+                save_dtype='float32')
 
     if nranks > 1:
         paddle.distributed.fleet.init(is_collective=True)
@@ -119,17 +138,15 @@ def train(model,
         batch_sampler=batch_sampler,
         num_workers=num_workers,
         return_list=True,
-        worker_init_fn=worker_init_fn,
-    )
-
-    # use amp
-    if fp16:
-        logger.info('use amp to train')
-        scaler = paddle.amp.GradScaler(init_loss_scaling=1024)
+        worker_init_fn=worker_init_fn, )
 
     if use_vdl:
         from visualdl import LogWriter
         log_writer = LogWriter(save_dir)
+
+    if to_static_training:
+        model = paddle.jit.to_static(model)
+        logger.info("Successfully to apply @to_static")
 
     avg_loss = 0.0
     avg_loss_list = []
@@ -160,17 +177,16 @@ def train(model,
             if hasattr(model, 'data_format') and model.data_format == 'NHWC':
                 images = images.transpose((0, 2, 3, 1))
 
-            if fp16:
+            if precision == 'fp16':
                 with paddle.amp.auto_cast(
+                        level=amp_level,
                         enable=True,
                         custom_white_list={
                             "elementwise_add", "batch_norm", "sync_batch_norm"
                         },
                         custom_black_list={'bilinear_interp_v2'}):
-                    if nranks > 1:
-                        logits_list = ddp_model(images)
-                    else:
-                        logits_list = model(images)
+                    logits_list = ddp_model(images) if nranks > 1 else model(
+                        images)
                     loss_list = loss_computation(
                         logits_list=logits_list,
                         labels=labels,
@@ -185,10 +201,7 @@ def train(model,
                 else:
                     scaler.minimize(optimizer, scaled)  # update parameters
             else:
-                if nranks > 1:
-                    logits_list = ddp_model(images)
-                else:
-                    logits_list = model(images)
+                logits_list = ddp_model(images) if nranks > 1 else model(images)
                 loss_list = loss_computation(
                     logits_list=logits_list,
                     labels=labels,
@@ -196,7 +209,11 @@ def train(model,
                     edges=edges)
                 loss = sum(loss_list)
                 loss.backward()
-                optimizer.step()
+                # if the optimizer is ReduceOnPlateau, the loss is the one which has been pass into step.
+                if isinstance(optimizer, paddle.optimizer.lr.ReduceOnPlateau):
+                    optimizer.step(loss)
+                else:
+                    optimizer.step()
 
             lr = optimizer.get_lr()
 
@@ -229,9 +246,9 @@ def train(model,
                 eta = calculate_eta(remain_iters, avg_train_batch_cost)
                 logger.info(
                     "[TRAIN] epoch: {}, iter: {}/{}, loss: {:.4f}, lr: {:.6f}, batch_cost: {:.4f}, reader_cost: {:.5f}, ips: {:.4f} samples/sec | ETA {}"
-                    .format((iter - 1) // iters_per_epoch + 1, iter, iters,
-                            avg_loss, lr, avg_train_batch_cost,
-                            avg_train_reader_cost,
+                    .format((iter - 1
+                             ) // iters_per_epoch + 1, iter, iters, avg_loss,
+                            lr, avg_train_batch_cost, avg_train_reader_cost,
                             batch_cost_averager.get_ips_average(), eta))
                 if use_vdl:
                     log_writer.add_scalar('Train/loss', avg_loss, iter)
@@ -254,15 +271,20 @@ def train(model,
                 reader_cost_averager.reset()
                 batch_cost_averager.reset()
 
-            if (iter % save_interval == 0
-                    or iter == iters) and (val_dataset is not None):
+            if (iter % save_interval == 0 or
+                    iter == iters) and (val_dataset is not None):
                 num_workers = 1 if num_workers > 0 else 0
 
                 if test_config is None:
                     test_config = {}
 
                 mean_iou, acc, _, _, _ = evaluate(
-                    model, val_dataset, num_workers=num_workers, **test_config)
+                    model,
+                    val_dataset,
+                    num_workers=num_workers,
+                    precision=precision,
+                    amp_level=amp_level,
+                    **test_config)
 
                 model.train()
 
@@ -298,7 +320,7 @@ def train(model,
             batch_start = time.time()
 
     # Calculate flops.
-    if local_rank == 0:
+    if local_rank == 0 and not (precision == 'fp16' and amp_level == 'O2'):
         _, c, h, w = images.shape
         _ = paddle.flops(
             model, [1, c, h, w],

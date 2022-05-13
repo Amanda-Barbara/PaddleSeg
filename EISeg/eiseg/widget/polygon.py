@@ -1,3 +1,17 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from qtpy import QtWidgets, QtGui, QtCore
 
 from . import GripItem, LineItem, BBoxAnnotation
@@ -5,16 +19,16 @@ from . import GripItem, LineItem, BBoxAnnotation
 
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def __init__(
-        self,
-        labelIndex,
-        shape,
-        delPolygon,
-        insideColor=[255, 0, 0],
-        borderColor=[0, 255, 0],
-        opacity=0.5,
-        cocoIndex=None,
-        parent=None,
-    ):
+            self,
+            labelIndex,
+            shape,
+            delPolygon,
+            setDirty,
+            insideColor=[255, 0, 0],
+            borderColor=[0, 255, 0],
+            opacity=0.5,
+            cocoIndex=None,
+            parent=None, ):
         super(PolygonAnnotation, self).__init__(parent)
         self.points = []
         self.m_items = []
@@ -22,6 +36,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.coco_id = cocoIndex
         self.height, self.width = shape[:2]
         self.delPolygon = delPolygon
+        self.setDirty = setDirty
 
         self.labelIndex = labelIndex
         self.item_hovering = False
@@ -73,9 +88,14 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
             # self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, False)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges,
+                         False)
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
             self.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
+            for line in self.m_lines:
+                line.setAnning(False)
+            for grip in self.m_items:
+                grip.setAnning(False)
         else:
             self.setAcceptHoverEvents(True)
             self.anning = False
@@ -89,35 +109,41 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
             self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            for line in self.m_lines:
+                line.setAnning(True)
+            for grip in self.m_items:
+                grip.setAnning(True)
 
     def addPointMiddle(self, lineIdx, point):
-        gripItem = GripItem(self, lineIdx + 1, self.borderColor)
+        gripItem = GripItem(self, lineIdx + 1, self.borderColor,
+                            (self.height, self.width))
         gripItem.setEnabled(False)
         gripItem.setPos(point)
         self.scene().addItem(gripItem)
         gripItem.updateSize()
         gripItem.setEnabled(True)
-        for grip in self.m_items[lineIdx + 1 :]:
+        for grip in self.m_items[lineIdx + 1:]:
             grip.m_index += 1
         self.m_items.insert(lineIdx + 1, gripItem)
         self.points.insert(lineIdx + 1, self.mapFromScene(point))
         self.setPolygon(QtGui.QPolygonF(self.points))
         self.bbox.update()
-        for line in self.m_lines[lineIdx + 1 :]:
+        for line in self.m_lines[lineIdx + 1:]:
             line.idx += 1
         line = QtCore.QLineF(self.mapToScene(self.points[lineIdx]), point)
         self.m_lines[lineIdx].setLine(line)
         lineItem = LineItem(self, lineIdx + 1, self.borderColor)
         line = QtCore.QLineF(
             point,
-            self.mapToScene(self.points[(lineIdx + 2) % len(self)]),
-        )
+            self.mapToScene(self.points[(lineIdx + 2) % len(self)]), )
         lineItem.setLine(line)
         self.m_lines.insert(lineIdx + 1, lineItem)
         self.scene().addItem(lineItem)
+        lineItem.updateWidth()
 
     def addPointLast(self, p):
-        grip = GripItem(self, len(self), self.borderColor)
+        grip = GripItem(self,
+                        len(self), self.borderColor, (self.height, self.width))
         self.scene().addItem(grip)
         self.m_items.append(grip)
         grip.updateSize()
@@ -175,8 +201,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             del self.m_lines[focusIdx]
             line = QtCore.QLineF(
                 self.mapToScene(self.points[(focusIdx - 1) % len(self)]),
-                self.mapToScene(self.points[focusIdx % len(self)]),
-            )
+                self.mapToScene(self.points[focusIdx % len(self)]), )
             # print((focusIdx - 1) % len(self), len(self.m_lines), len(self))
             self.m_lines[(focusIdx - 1) % len(self)].setLine(line)
             for line in self.m_lines[focusIdx:]:
@@ -208,13 +233,13 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         points = self.points
         # line[i]
         line = QtCore.QLineF(
-            self.mapToScene(points[i]), self.mapToScene(points[(i + 1) % len(self)])
-        )
+            self.mapToScene(points[i]),
+            self.mapToScene(points[(i + 1) % len(self)]))
         self.m_lines[i].setLine(line)
         # line[i-1]
         line = QtCore.QLineF(
-            self.mapToScene(points[(i - 1) % len(self)]), self.mapToScene(points[i])
-        )
+            self.mapToScene(points[(i - 1) % len(self)]),
+            self.mapToScene(points[i]))
         # print((i - 1) % len(self), len(self.m_lines), len(self))
         self.m_lines[(i - 1) % len(self)].setLine(line)
 

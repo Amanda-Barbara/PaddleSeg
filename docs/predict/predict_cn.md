@@ -13,7 +13,7 @@ python predict.py \
        --save_dir output/result
 ```
 
-其中`image_path`也可以是一个目录，这时候将对目录内的所有图片进行预测并保存可视化结果图。
+其中`image_path`可以是一张图片的路径，也可以是一个包含图片路径的文件列表，也可以是一个目录，这时候将对该图片或文件列表或目录内的所有图片进行预测并保存可视化结果图。
 
 同样的，可以通过`--aug_pred`开启多尺度翻转预测， `--is_slide`开启滑窗预测。
 
@@ -34,7 +34,6 @@ python predict.py \
     ...
     ```
 
-* 此时你可以在预测时将`image_list`指定为`train.txt`，将`image_dir`指定为训练数据所在的目录。PaddleSeg的鲁棒性允许你这样做，输出的结果将是对**原始训练数据**的预测结果。
 
 ## 2.预测函数API
 预测API的参数解析
@@ -70,8 +69,8 @@ paddleseg.core.predict(
 | save_dir        | str               | 结果输出路径                                         | 否         | 'output' |
 | aug_pred        | bool              | 是否使用多尺度和翻转增广进行预测                     | 否         | False    |
 | scales          | list/float        | 设置缩放因子，`aug_pred`为True时生效                   | 否         | 1.0      |
-| flip_horizontal | bool              | 是否使用水平翻转，`aug_eval`为True时生效               | 否         | True     |
-| flip_vertical   | bool              | 是否使用垂直翻转，`aug_eval`为True时生效               | 否         | False    |
+| flip_horizontal | bool              | 是否使用水平翻转，`aug_pred`为True时生效           | 否         | True     |
+| flip_vertical   | bool              | 是否使用垂直翻转，`aug_pred`为True时生效           | 否         | False    |
 | is_slide        | bool              | 是否通过滑动窗口进行评估                             | 否         | False    |
 | stride          | tuple/list        | 设置滑动窗宽的宽度和高度，`is_slide`为True时生效       | 否         | None     |
 | crop_size       | tuple/list        | 设置滑动窗口的裁剪的宽度和高度，`is_slide`为True时生效 | 否         | None     |

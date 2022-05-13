@@ -14,7 +14,7 @@ python predict.py \
        --save_dir output/result
 ```
 
-Among them, `image_path` can also be a directory. At this time, all the images in the directory will be predicted and the visualization results will be saved.
+Where `image_path` can be the path of a picture, a file list containing image paths, or a directory. At this time, that image or all images in file list or directory will be predicted and the visualization results will be saved.
 
 Similarly, you can use `--aug_pred` to turn on multi-scale flip prediction, and `--is_slide` to turn on sliding window prediction.
 
@@ -35,10 +35,8 @@ Similarly, you can use `--aug_pred` to turn on multi-scale flip prediction, and 
     ...
     ```
 
-* At this point, you can specify `image_list` as `train.txt` and `image_dir` as the directory where the training data is located when predicting. The robustness of PaddleSeg allows you to do this, and the output will be the prediction result of the **original training data**.
-
 ## 2.API
-Parameter Analysis of Forecast API 
+Parameter Analysis of Forecast API
 
 ```
 paddleseg.core.predict(
@@ -70,9 +68,9 @@ paddleseg.core.predict(
 | image_dir       | str               | The directory of the image path to be predicted     | No         | None     |
 | save_dir        | str               | Output directory                                         | No         | 'output' |
 | aug_pred        | bool              | Whether to use multi-scale and flip augmentation for prediction          | No         | False    |
-| scales          | list/float        | Set the zoom factor, take effect when aug_pred is True                   | No         | 1.0      |
-| flip_horizontal | bool              | Whether to use horizontal flip, take effect when `aug_eval` is True      | No         | True     |
-| flip_vertical   | bool              | Whether to use vertical flip, take effect when `aug_eval` is True        | No         | False    |
+| scales          | list/float        | Set the zoom factor, take effect when `aug_pred` is True                 | No         | 1.0      |
+| flip_horizontal | bool              | Whether to use horizontal flip, take effect when `aug_pred` is True  | No         | True     |
+| flip_vertical   | bool              | Whether to use vertical flip, take effect when `aug_pred` is True    | No         | False    |
 | is_slide        | bool              | Whether to evaluate through a sliding window                             | No         | False    |
 | stride          | tuple/list        | Set the width and height of the sliding window, effective when `is_slide` is True       | No         | None     |
 | crop_size       | tuple/list        | Set the width and height of the crop of the sliding window, which takes effect when `is_slide` is True | No         | None     |

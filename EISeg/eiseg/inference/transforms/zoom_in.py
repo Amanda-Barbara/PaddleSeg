@@ -1,3 +1,22 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This code is based on https://github.com/saic-vul/ritm_interactive_segmentation
+Ths copyright of saic-vul/ritm_interactive_segmentation is as follows:
+MIT License [see LICENSE for details]
+"""
+
 import paddle
 import numpy as np
 from inference.clicker import Click
@@ -6,13 +25,14 @@ from .base import BaseTransform
 
 
 class ZoomIn(BaseTransform):
-    def __init__(self,
-                 target_size=700,
-                 skip_clicks=1,
-                 expansion_ratio=1.4,
-                 min_crop_size=480,
-                 recompute_thresh_iou=0.5,
-                 prob_thresh=0.50):
+    def __init__(
+            self,
+            target_size=700,
+            skip_clicks=1,
+            expansion_ratio=1.4,
+            min_crop_size=480,
+            recompute_thresh_iou=0.5,
+            prob_thresh=0.50, ):
         super().__init__()
         self.target_size = target_size
         self.min_crop_size = min_crop_size
@@ -40,27 +60,33 @@ class ZoomIn(BaseTransform):
         if self._prev_probs is not None:
             current_pred_mask = (self._prev_probs > self.prob_thresh)[0, 0]
             if current_pred_mask.sum() > 0:
-                current_object_roi = get_object_roi(current_pred_mask, clicks_list,
-                                                    self.expansion_ratio, self.min_crop_size)
+                current_object_roi = get_object_roi(
+                    current_pred_mask,
+                    clicks_list,
+                    self.expansion_ratio,
+                    self.min_crop_size, )
 
         if current_object_roi is None:
             if self.skip_clicks >= 0:
                 return image_nd, clicks_lists
             else:
-                current_object_roi = 0, image_nd.shape[2] - 1, 0, image_nd.shape[3] - 1
+                current_object_roi = 0, image_nd.shape[
+                    2] - 1, 0, image_nd.shape[3] - 1
 
         update_object_roi = False
         if self._object_roi is None:
             update_object_roi = True
         elif not check_object_roi(self._object_roi, clicks_list):
             update_object_roi = True
-        elif get_bbox_iou(current_object_roi, self._object_roi) < self.recompute_thresh_iou:
+        elif (get_bbox_iou(current_object_roi, self._object_roi) <
+              self.recompute_thresh_iou):
             update_object_roi = True
 
         if update_object_roi:
             self._object_roi = current_object_roi
             self.image_changed = True
-        self._roi_image = get_roi_image_nd(image_nd, self._object_roi, self.target_size)
+        self._roi_image = get_roi_image_nd(image_nd, self._object_roi,
+                                           self.target_size)
 
         tclicks_lists = [self._transform_clicks(clicks_list)]
         return self._roi_image, tclicks_lists
@@ -72,11 +98,15 @@ class ZoomIn(BaseTransform):
 
         assert prob_map.shape[0] == 1
         rmin, rmax, cmin, cmax = self._object_roi
-        prob_map = paddle.nn.functional.interpolate(prob_map, size=(rmax - rmin + 1, cmax - cmin + 1),
-                                                   mode='bilinear', align_corners=True)
+        prob_map = paddle.nn.functional.interpolate(
+            prob_map,
+            size=(rmax - rmin + 1, cmax - cmin + 1),
+            mode="bilinear",
+            align_corners=True, )
 
         if self._prev_probs is not None:
-            new_prob_map = paddle.zeros(shape=self._prev_probs.shape, dtype=prob_map.dtype)
+            new_prob_map = paddle.zeros(
+                shape=self._prev_probs.shape, dtype=prob_map.dtype)
             new_prob_map[:, :, rmin:rmax + 1, cmin:cmax + 1] = prob_map
         else:
             new_prob_map = prob_map
@@ -86,24 +116,39 @@ class ZoomIn(BaseTransform):
         return new_prob_map
 
     def check_possible_recalculation(self):
-        if self._prev_probs is None or self._object_roi is not None or self.skip_clicks > 0:
+        if (self._prev_probs is None or self._object_roi is not None or
+                self.skip_clicks > 0):
             return False
 
         pred_mask = (self._prev_probs > self.prob_thresh)[0, 0]
         if pred_mask.sum() > 0:
-            possible_object_roi = get_object_roi(pred_mask, [],
-                                                 self.expansion_ratio, self.min_crop_size)
-            image_roi = (0, self._input_image_shape[2] - 1, 0, self._input_image_shape[3] - 1)
+            possible_object_roi = get_object_roi(
+                pred_mask, [], self.expansion_ratio, self.min_crop_size)
+            image_roi = (
+                0,
+                self._input_image_shape[2] - 1,
+                0,
+                self._input_image_shape[3] - 1, )
             if get_bbox_iou(possible_object_roi, image_roi) < 0.50:
                 return True
         return False
 
     def get_state(self):
         roi_image = self._roi_image if self._roi_image is not None else None
-        return self._input_image_shape, self._object_roi, self._prev_probs, roi_image, self.image_changed
+        return (
+            self._input_image_shape,
+            self._object_roi,
+            self._prev_probs,
+            roi_image,
+            self.image_changed, )
 
     def set_state(self, state):
-        self._input_image_shape, self._object_roi, self._prev_probs, self._roi_image, self.image_changed = state
+        (
+            self._input_image_shape,
+            self._object_roi,
+            self._prev_probs,
+            self._roi_image,
+            self.image_changed, ) = state
 
     def reset(self):
         self._input_image_shape = None
@@ -157,8 +202,11 @@ def get_roi_image_nd(image_nd, object_roi, target_size):
 
     with paddle.no_grad():
         roi_image_nd = image_nd[:, :, rmin:rmax + 1, cmin:cmax + 1]
-        roi_image_nd = paddle.nn.functional.interpolate(roi_image_nd, size=(new_height, new_width),
-                                                       mode='bilinear', align_corners=True)
+        roi_image_nd = paddle.nn.functional.interpolate(
+            roi_image_nd,
+            size=(new_height, new_width),
+            mode="bilinear",
+            align_corners=True, )
 
     return roi_image_nd
 
@@ -166,9 +214,11 @@ def get_roi_image_nd(image_nd, object_roi, target_size):
 def check_object_roi(object_roi, clicks_list):
     for click in clicks_list:
         if click.is_positive:
-            if click.coords[0] < object_roi[0] or click.coords[0] >= object_roi[1]:
+            if click.coords[0] < object_roi[0] or click.coords[0] >= object_roi[
+                    1]:
                 return False
-            if click.coords[1] < object_roi[2] or click.coords[1] >= object_roi[3]:
+            if click.coords[1] < object_roi[2] or click.coords[1] >= object_roi[
+                    3]:
                 return False
 
     return True

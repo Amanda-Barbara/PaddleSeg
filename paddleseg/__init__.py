@@ -14,4 +14,8 @@
 
 from . import models, datasets, transforms
 
+<<<<<<< HEAD
 __version__ = '2.3.0'
+=======
+__version__ = '2.5.0'
+>>>>>>> fb53e6b41df8e4d84b1d25670f9ddcc01f888c20

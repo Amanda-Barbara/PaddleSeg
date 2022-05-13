@@ -37,15 +37,32 @@ class PPHumanSegLite(nn.Layer):
         self.conv_bn1 = _ConvBNReLU(36, 18, 1, 1, 0)
 
         self.block1 = nn.Sequential(
-            InvertedResidual(36, stride=2, out_channels=72),
-            InvertedResidual(72, stride=1), InvertedResidual(72, stride=1),
-            InvertedResidual(72, stride=1))
+            InvertedResidual(
+                36, stride=2, out_channels=72),
+            InvertedResidual(
+                72, stride=1),
+            InvertedResidual(
+                72, stride=1),
+            InvertedResidual(
+                72, stride=1))
 
         self.block2 = nn.Sequential(
-            InvertedResidual(72, stride=2), InvertedResidual(144, stride=1),
-            InvertedResidual(144, stride=1), InvertedResidual(144, stride=1),
-            InvertedResidual(144, stride=1), InvertedResidual(144, stride=1),
-            InvertedResidual(144, stride=1), InvertedResidual(144, stride=1))
+            InvertedResidual(
+                72, stride=2),
+            InvertedResidual(
+                144, stride=1),
+            InvertedResidual(
+                144, stride=1),
+            InvertedResidual(
+                144, stride=1),
+            InvertedResidual(
+                144, stride=1),
+            InvertedResidual(
+                144, stride=1),
+            InvertedResidual(
+                144, stride=1),
+            InvertedResidual(
+                144, stride=1))
 
         self.depthwise_separable0 = _SeparableConvBNReLU(144, 64, 3, stride=1)
         self.depthwise_separable1 = _SeparableConvBNReLU(82, 64, 3, stride=1)
@@ -223,22 +240,3 @@ class InvertedResidual(nn.Layer):
         output = paddle.transpose(x=output, perm=[0, 2, 1, 3, 4])
         output = paddle.reshape(x=output, shape=[0, 2 * self.in_channels, h, w])
         return output
-
-
-if __name__ == '__main__':
-    import numpy as np
-    import os
-
-    np.random.seed(100)
-    paddle.seed(100)
-
-    net = PPHumanSegLite(10)
-    img = np.random.random(size=(4, 3, 100, 100)).astype('float32')
-    img = paddle.to_tensor(img)
-    out = net(img)
-    print(out)
-
-    net.forward = paddle.jit.to_static(net.forward)
-    save_path = os.path.join('.', 'model')
-    in_var = paddle.ones([4, 3, 100, 100])
-    paddle.jit.save(net, save_path, input_spec=[in_var])
